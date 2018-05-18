@@ -65,9 +65,11 @@ def HD(graph, q_ratio):
 def PageRank(graph, q_ratio):
     """
     """
-    print "hello world"
-    print "hello"
-    print "hello"
+    numOfNodes = int(len(graph.nodes())*q_ratio)
+    pr = nx.PageRank(graph)
+    descend_pr = sorted(pr.items(), key=lambda x: x[1], reverse=True)
+    return [item[0] for item in descend_pr[:N]]
+
 
 def K_core(graph, q_ratio):
     """
