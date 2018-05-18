@@ -46,17 +46,72 @@ def cascade(graph, seed, verbose=False):
             print "after node {} cascade its information, casc_rate:{}".format(u, casc_rate(graph))
             print "="*60
 
-    return graph
+    return graph, casc_rate(graph)
+
+def HD(graph, q_ratio):
+    """
+    Return the N*q_ratio nodes with the highest degrees.
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes
+    """
+    N = int(len(graph.nodes())*q_ratio)
+    degree_list = graph.degree()
+    tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
+    return [nd_pair[0] for nd_pair in tmp_dlist[:N]]
+
+def PageRank(graph, q_ratio):
+    """
+    """
+    pass
+
+def K_core(graph, q_ratio):
+    """
+    The k-core is the largest subgraph where vertices have at least k interconnections.
+    In this project, we need a set of seed nodes with size of N. So we iteratively increase
+    k and remove all the vertices with degree less than k. And we randomly select N nodes
+    from the final subgraph.
+
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes  
+    """
+    k = 1
+    N = int(len(graph.nodes())*q_ratio)
+    while len(graph.nodes()) > N:
+        to_be_remove = []
+        d_list = list(graph.degree())
+
+        # shuffle the degree list in case always selecting the nodes id from small to large
+        random.shuffle(d_list)  
+
+        for node, degree in d_list:
+            if degree <= k and len(graph.nodes())-len(to_be_remove) > N:
+                to_be_remove.append(node)
+        graph.remove_nodes_from(to_be_remove)
+        k += 1 
+    return list(graph.nodes())[:N]
 
 
+def CI(graph, q_ratio):
+    """
+    """
+    pass
+
+def fanshen(graph, q_ratio):
+    """
+    """
+    pass
 
 def main():
-    G = gen_random_graph(20, 0.4, uniform_min=0.5, uniform_max=0.5)
-    # cascade(G, [3], verbose=True)
-    print_graph(G)
-    # plt.subplot(121)
-    # nx.draw(G, with_labels=True, font_weight='bold')
-    # plt.show()
+    G = gen_random_graph(30, 0.1, uniform_min=0.5, uniform_max=0.5)
+    print G.degree()
+    print K_core(G.copy(), 0.1)
+    print HD(G.copy(), 0.1)
 
 if __name__ == '__main__':
     main()

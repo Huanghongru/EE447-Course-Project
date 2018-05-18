@@ -37,3 +37,12 @@ def print_graph(graph, node=True, edge=True):
     if edge:
         for u, v, edge_prop in graph.edges(data=True):
             print "({},{})\t{}".format(u, v, edge_prop)
+
+def visualize(graph):
+    pass
+
+def write_graph(graph):
+    pass
+
+def load_graph(graph):
+    pass
