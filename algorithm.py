@@ -66,6 +66,8 @@ def PageRank(graph, q_ratio):
     """
     """
     print "hello world"
+    print "collision test"
+    print "collision again and again"
 
 def K_core(graph, q_ratio):
     """
