@@ -24,14 +24,14 @@ def cascade(graph, seed, verbose=False):
     q = deque(seed)
     while len(q):
         if not verbose:
-            cur_node = q.pop()
+            cur_node = q.popleft()  # FIFO
             for u, v, d in graph.edges(cur_node, data=True):
                 if not graph.node[v]['state']:
                     if random.uniform(0, 1) > 1-d['weight']:
                         graph.node[v]['state'] = 1
                         q.append(v)
         else:
-            cur_node = q.pop()
+            cur_node = q.popleft()
             for u, v, d in graph.edges(cur_node, data=True):
                 if not graph.node[v]['state']:
                     casc_prop = random.uniform(0, 1)
@@ -84,27 +84,126 @@ def K_core(graph, q_ratio):
     Return:
         a list of seed nodes  
     """
+    def k_decomposition(k, N):
+        """
+        Obtain the subgraph after k-core algorithm
+        """
+        while True:
+            degree_list = graph.degree()
+            tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
+            to_be_remove = []
+            for node, degree in tmp_dlist:
+                if degree <= k and len(graph.nodes())-len(to_be_remove) > N:
+                    to_be_remove.append(node)
+            if not to_be_remove:
+                break
+            else:
+                graph.remove_nodes_from(to_be_remove)
+
+
     k = 1
     N = int(len(graph.nodes())*q_ratio)
     while len(graph.nodes()) > N:
-        to_be_remove = []
-        d_list = list(graph.degree())
+        k_decomposition(k, N)
+        k += 1
 
-        # shuffle the degree list in case always selecting the nodes id from small to large
-        random.shuffle(d_list)  
-
-        for node, degree in d_list:
-            if degree <= k and len(graph.nodes())-len(to_be_remove) > N:
-                to_be_remove.append(node)
-        graph.remove_nodes_from(to_be_remove)
-        k += 1 
-    return list(graph.nodes())[:N]
+    # shuffle the degree list in case always selecting the nodes id from small to large
+    seed_candidate = list(graph.nodes())
+    random.shuffle(seed_candidate)
+    return seed_candidate[:N]
 
 
-def CI(graph, q_ratio):
+def CI(graph, q_ratio, l=3):
     """
-    """
-    pass
+    Looking for the node with the largest CI value. Virtually remove
+    the nodes and find the next node with the largest CI value.
+    Repeat until we get N seed nodes.
+
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes   
+    """ 
+    def ball(node, l):
+        """
+        Given a node i, return all the nodes that are distance l from i
+        and all the corresponding paths.
+
+        Note that we use the original graph for ball detection.
+
+        The last node in the path is the ball node.
+        """
+        # ball_nodes = set()
+        paths = []
+        visited = set()
+        cur_len = 0
+        min_dist = {}   # record the minimum distance from node i
+        q = deque([(node, [node])])
+
+        while cur_len <= l:
+            cur_layer_nodes_num = len(q)
+            while cur_layer_nodes_num > 0 and len(q):
+                cur_node, cur_path = q.popleft()
+                visited.add(cur_node)
+
+                if not min_dist.get(cur_node):
+                    min_dist[cur_node] = cur_len
+                
+                if cur_len == l and min_dist[cur_node] == l:
+                    # ball_nodes.add(cur_node)
+                    paths.append(cur_path)
+
+                for u, v in graph.edges(cur_node):
+                    if v not in visited:
+                        aug_path = cur_path[:]
+                        aug_path.append(v)
+                        q.append((v, aug_path))
+                cur_layer_nodes_num -= 1
+            cur_len += 1
+
+        return paths
+
+    def get_CI(node, paths, node_status):
+        """
+        Calculate the CI value according to the equation.
+        Note that we use the copy graph to calculate CI. The degrees
+        are different from the original graph.
+        """
+        ci = 0
+        for path in paths:
+            if path[-1] not in graph_.node():
+                continue
+
+            nk = 1
+            for p_node in path:
+                nk *= node_status[p_node]
+            nk *= (graph_.degree(path[-1])-1)
+            ci += nk
+        return ci * (graph_.degree(node)-1)
+
+
+    N = int(len(graph.nodes())*q_ratio)
+
+    seed = []
+    graph_ = graph.copy()   # copy a graph for node removal 
+    node_status = [1 for i in range(len(graph.nodes()))]
+    all_paths = []
+    for node in graph.nodes():
+        all_paths.append(ball(node, l))
+
+    while len(seed) < N:
+        max_CI, max_id = 0, 0
+        for node in graph_.nodes():
+            cur_CI = get_CI(node, all_paths[node], node_status)
+            if cur_CI > max_CI:
+                max_CI = cur_CI
+                max_id = node
+
+        graph_.remove_node(max_id)
+        node_status[max_id] = 0
+        seed.append(max_id)
+    return seed
 
 def fanshen(graph, q_ratio):
     """
@@ -113,9 +212,7 @@ def fanshen(graph, q_ratio):
 
 def main():
     G = gen_random_graph(30, 0.1, uniform_min=0.5, uniform_max=0.5)
-    print G.degree()
-    print K_core(G.copy(), 0.1)
-    print HD(G.copy(), 0.1)
+    print CI(G, 0.1)
 
 if __name__ == '__main__':
     main()
