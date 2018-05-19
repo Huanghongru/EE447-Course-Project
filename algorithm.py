@@ -76,7 +76,7 @@ def PageRank(graph, q_ratio):
         a list of seed nodes
     """
     N = int(len(graph.nodes())*q_ratio)
-    pr = nx.PageRank(graph)
+    pr = nx.pagerank(graph)
     descend_pr = sorted(pr.items(), key=lambda x: x[1], reverse=True)
     return [item[0] for item in descend_pr[:N]]
 
@@ -122,7 +122,7 @@ def K_core(graph, q_ratio):
     random.shuffle(seed_candidate)
     return seed_candidate[:N]
 
-
+# TODO: some bugs may exist so CI peform worse than K-core
 def CI(graph, q_ratio, l=3):
     """
     Looking for the node with the largest CI value. Virtually remove
@@ -220,9 +220,4 @@ def fanshen(graph, q_ratio):
     """
     pass
 
-def main():
-    G = gen_random_graph(30, 0.1, uniform_min=0.5, uniform_max=0.5)
-    print CI(G, 0.1)
 
-if __name__ == '__main__':
-    main()
