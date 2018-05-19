@@ -64,12 +64,22 @@ def HD(graph, q_ratio):
 
 def PageRank(graph, q_ratio):
     """
+    PageRank outputs a probability distribution used to represent the likelihood 
+    that a person randomly clicking on links will arrive at any particular page. 
+    The higher the probability, the higher the PR value of this page. 
+    Here we consider each node as a page, using PageRank() provided by networkx.
+
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes
     """
-    print "hello world"
-    print "collision test"
-    print "collision again and again"
-    print "hello"
-    print "hello"
+    N = int(len(graph.nodes())*q_ratio)
+    pr = nx.PageRank(graph)
+    descend_pr = sorted(pr.items(), key=lambda x: x[1], reverse=True)
+    return [item[0] for item in descend_pr[:N]]
+
 
 def K_core(graph, q_ratio):
     """
