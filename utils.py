@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 
-def gen_random_graph(n, p, uniform_min=0., uniform_max=1.):
+def gen_random_graph_gnp(n, p, uniform_min=0., uniform_max=1.):
     """
     Generate a random graph with given nodes n and existence probability p
     All edges are granted a weight represented the probability of being infected
@@ -21,6 +21,25 @@ def gen_random_graph(n, p, uniform_min=0., uniform_max=1.):
     else:
         G = nx.generators.random_graphs.gnp_random_graph(n, p)
 
+    for _, node_prop in G.nodes(data=True):
+        node_prop['state'] = 0
+    for _, _, edge_prop in G.edges(data=True):
+        edge_prop['weight'] = float("{0:.2f}".format(random.uniform(uniform_min, uniform_max)))
+    return G
+
+def gen_random_graph_pow(n, m, p, uniform_min=0., uniform_max=1.):
+    """
+    Generate a random graph with given nodes n and existence probability p
+    All edges are granted a weight represented the probability of being infected
+    All nodes are granted a state 0 initially, which means they haven't been infected.
+
+    Parameters:
+        n: The number of nodes.
+        p: Probability for edge creation.
+        uniform_min: the left point for uniform distribution interval
+        uniform_max: the right point for uniform distribution interval
+    """
+    G = nx.generators.random_graphs.powerlaw_cluster_graph(n, m, p)
     for _, node_prop in G.nodes(data=True):
         node_prop['state'] = 0
     for _, _, edge_prop in G.edges(data=True):
