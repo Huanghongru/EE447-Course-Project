@@ -50,7 +50,7 @@ def cascade(graph, seed, verbose=False):
 
 def HD(graph, q_ratio):
     """
-    Return the N*q_ratio nodes with the highest degrees.
+    Return the N*q_ratio nodes with the highest degree.
     Parameters:
         graph: a nx.Graph type.
         q_ratio: (float) the ratio of nodes used as seeds.
@@ -61,6 +61,25 @@ def HD(graph, q_ratio):
     degree_list = graph.degree()
     tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
     return [nd_pair[0] for nd_pair in tmp_dlist[:N]]
+
+def HDA(graph, q_ratio):
+    """
+    Return the N*q_ratio nodes with the highest degree.
+    Whenever remove a node from the graph, recalculate the degrees.
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes   
+    """
+    N = int(len(graph.nodes())*q_ratio)
+    seed = []
+    while len(seed) < N:
+        degree_list = graph.degree()
+        tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
+        seed.append(tmp_dlist[0][0])
+        graph.remove_node(tmp_dlist[0][0])
+    return seed
 
 def PageRank(graph, q_ratio):
     """
