@@ -1,5 +1,6 @@
 import os
 import random
+import numpy as np
 import networkx as nx
 import multiprocessing as mp
 import matplotlib.pyplot as plt
@@ -70,47 +71,53 @@ def write_graph(graph):
 def load_graph(file):
     """
     Load a large network file into graph variable.
-    Using multiprocessing to accelerate this process.
+    
+    Parameters:
+        file: (string) specify the network file name
     """
-    def read_edge(graph, data):
-        data_ = data.split()
-        if len(data_) > 2:
-            u, v, w = data_
-        else:
-            u, v = data_
-            w = 0
-        graph.add_edge(u, v, weight=w)
-
-    def process_wrapper(graph, file, lineByte):
-        with open(file) as f:
-            f.seek(lineByte)
-            line = f.readline()
-            read_edge(graph, line)
-
     file = os.path.join(network_dir, file)
     G = nx.Graph()
 
-    pool = mp.Pool(4)
-    jobs = []
-
-    with open(file) as f:
-        nextLineByte = f.tell()
-        for line in f:
-            jobs.append(pool.apply_async(process_wrapper, (G, file, nextLineByte)))
-            nextLineByte = f.tell()
-
-    for job in jobs:
-        job.get()
-
-    pool.close() 
+    with open(file, 'r') as f:
+        while True:
+            datas = f.readlines(10)
+            if not datas:
+                break
+            for data in datas:
+                if len(data.split()) > 2:
+                    u, v, w = data.split()
+                else:
+                    u, v = data.split()
+                    w = '0'
+                G.add_edge(eval(u), eval(v), weight=eval(w))
+    for _, node_prop in G.nodes(data=True):
+        node_prop['state'] = 0
+    print "loading graph completed successfully!!"
     return G
 
 
 def statistic(graph):
-    #TODO: return some important properties of the given graph.
-    #TODO: maybe include number of nodes, edges, degree and average weight, etc.
-    pass
+    """
+    Print out the basic information of the graph.
+    Return weight distribution and degree distribution of the graph.
+    """
+    print nx.info(graph)
+    weights = []
+    degrees = []
+    for node in graph.nodes():
+        degrees.append(graph.degree(node))
+    for u, v, d in graph.edges(data=True):
+        weights.append(d['weight'])
+    return np.array(weights), np.array(degrees)
 
 
+def main():
+    G = load_graph('brightkite.txt')
+    w, d = statistic(G)
+    plt.hist(d, bins=1000)
+    plt.show()
+
+if __name__ == '__main__':
+    main()
 
 
