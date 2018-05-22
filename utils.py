@@ -1,8 +1,11 @@
+import os
 import random
 import networkx as nx
+import multiprocessing as mp
 import matplotlib.pyplot as plt
 from collections import deque
 
+network_dir = "network"
 
 def gen_random_graph_gnp(n, p, uniform_min=0., uniform_max=1.):
     """
@@ -34,8 +37,9 @@ def gen_random_graph_pow(n, m, p, uniform_min=0., uniform_max=1.):
     All nodes are granted a state 0 initially, which means they haven't been infected.
 
     Parameters:
-        n: The number of nodes.
-        p: Probability for edge creation.
+        n: the number of nodes.
+        m: the number of random edges to add for each new node
+        p: Probability of adding a triangle after adding a random edge.
         uniform_min: the left point for uniform distribution interval
         uniform_max: the right point for uniform distribution interval
     """
@@ -63,5 +67,50 @@ def visualize(graph):
 def write_graph(graph):
     pass
 
-def load_graph(graph):
+def load_graph(file):
+    """
+    Load a large network file into graph variable.
+    Using multiprocessing to accelerate this process.
+    """
+    def read_edge(graph, data):
+        data_ = data.split()
+        if len(data_) > 2:
+            u, v, w = data_
+        else:
+            u, v = data_
+            w = 0
+        graph.add_edge(u, v, weight=w)
+
+    def process_wrapper(graph, file, lineByte):
+        with open(file) as f:
+            f.seek(lineByte)
+            line = f.readline()
+            read_edge(graph, line)
+
+    file = os.path.join(network_dir, file)
+    G = nx.Graph()
+
+    pool = mp.Pool(4)
+    jobs = []
+
+    with open(file) as f:
+        nextLineByte = f.tell()
+        for line in f:
+            jobs.append(pool.apply_async(process_wrapper, (G, file, nextLineByte)))
+            nextLineByte = f.tell()
+
+    for job in jobs:
+        job.get()
+
+    pool.close() 
+    return G
+
+
+def statistic(graph):
+    #TODO: return some important properties of the given graph.
+    #TODO: maybe include number of nodes, edges, degree and average weight, etc.
     pass
+
+
+
+
