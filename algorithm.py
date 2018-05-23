@@ -58,7 +58,14 @@ def HD(graph, q_ratio):
         a list of seed nodes
     """
     N = int(len(graph.nodes())*q_ratio)
-    degree_list = graph.degree()
+    # There is a very annoying bug here about the variable type returned 
+    # by Graph.degree() method. When you upload it to server to run, 
+    # change sorted part as:
+    #
+    #   tmp_dlist = sorted(degree_list, key=lambda x: degree_list[x], reverse=True)
+    #
+    # to avoid this bug. 
+    degree_list = graph.degree() 
     tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
     return [nd_pair[0] for nd_pair in tmp_dlist[:N]]
 
@@ -218,9 +225,15 @@ def CI(graph, q_ratio, l=3):
     graph_ = graph.copy()   # copy a graph for node removal 
     node_status = [1 for i in range(len(graph.nodes()))]
     all_paths = []
+
+    node_count = 0
     for node in graph.nodes():
         all_paths.append(ball(node, l))
+        node_count += 1
+        if node_count % 1000 == 0:
+            print "{} nodes have been processed...".format(node_count)
 
+    print "ball algorithm completed!!"
     while len(seed) < N:
         max_CI, max_id = 0, 0
         for node in graph_.nodes():
