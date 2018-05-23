@@ -111,13 +111,13 @@ def statistic(graph):
     return np.array(weights), np.array(degrees)
 
 
-def main():
-    G = load_graph('brightkite.txt')
-    w, d = statistic(G)
-    plt.hist(d, bins=1000)
-    plt.show()
+# def main():
+#     G = load_graph('brightkite.txt')
+#     w, d = statistic(G)
+#     plt.hist(d, bins=1000)
+#     plt.show()
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 
 

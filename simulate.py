@@ -49,10 +49,10 @@ def cascRate_vs_qRatio(graph, q_ratio_group):
     pass
 
 def main():
-    # G = gen_random_graph(1000, 0.0015, uniform_max=0.5)
+    G = gen_random_graph_gnp(2000, 0.0015, uniform_max=0.5)
     # print simulation(G, 0.005, fanshen=False)
-    G = load_graph('brightkite.txt')
-    print simulation(G, 0.005, fanshen=False, ci=False)
+    # G = load_graph('brightkite.txt')
+    print simulation(G, 0.005, fanshen=False)
 
 if __name__ == '__main__':
     main()
