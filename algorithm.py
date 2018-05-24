@@ -1,5 +1,7 @@
 import networkx as nx
 import numpy as np
+import time
+import sys
 from utils import *
 
 def cascade(graph, seed, verbose=False):
@@ -48,7 +50,7 @@ def cascade(graph, seed, verbose=False):
 
     return graph, casc_rate(graph)
 
-def HD(graph, q_ratio):
+def HD(graph, q_ratio): 
     """
     Return the N*q_ratio nodes with the highest degree.
     Parameters:
@@ -126,6 +128,18 @@ def K_core(graph, q_ratio):
         """
         while True:
             degree_list = graph.degree()
+            # There is a very annoying bug here about the variable type returned 
+            # by Graph.degree() method. When you upload it to server to run, 
+            # change sorted part as:
+            #
+            #   tmp_dlist = sorted(degree_list, key=lambda x: degree_list[x], reverse=True)
+            #
+            # change the for loop part as:
+            #
+            #   for node in tmp_dlist:
+            #       degree = graph.degree(node)
+            #       ...
+            #       ...
             tmp_dlist = sorted(degree_list, key=lambda nd_pair: nd_pair[1], reverse=True)
             to_be_remove = []
             for node, degree in tmp_dlist:
@@ -145,7 +159,6 @@ def K_core(graph, q_ratio):
 
     # shuffle the degree list in case always selecting the nodes id from small to large
     seed_candidate = list(graph.nodes())
-    random.shuffle(seed_candidate)
     return seed_candidate[:N]
 
 # TODO: some bugs may exist so CI peform worse than K-core
@@ -167,10 +180,12 @@ def CI(graph, q_ratio, l=3):
         and all the corresponding paths.
 
         Note that we use the original graph for ball detection.
-
         The last node in the path is the ball node.
+
+        Return:
+            paths: 
         """
-        # ball_nodes = set()
+        ball_nodes = set()
         paths = []
         visited = set()
         cur_len = 0
@@ -187,8 +202,11 @@ def CI(graph, q_ratio, l=3):
                     min_dist[cur_node] = cur_len
                 
                 if cur_len == l and min_dist[cur_node] == l:
-                    # ball_nodes.add(cur_node)
-                    paths.append(cur_path)
+                    if cur_path[-1] not in ball_nodes:
+                        paths.append(cur_path)
+                        for node_ in cur_path:
+                            affected[node_].add(node)
+                    ball_nodes.add(cur_node)
 
                 for u, v in graph.edges(cur_node):
                     if v not in visited:
@@ -206,9 +224,11 @@ def CI(graph, q_ratio, l=3):
         Note that we use the copy graph to calculate CI. The degrees
         are different from the original graph.
         """
+        if not node_status[node]:
+            return 0
         ci = 0
         for path in paths:
-            if path[-1] not in graph_.node():
+            if not node_status[path[-1]]:
                 continue
 
             nk = 1
@@ -226,30 +246,66 @@ def CI(graph, q_ratio, l=3):
     node_status = [1 for i in range(len(graph.nodes()))]
     all_paths = []
 
+    # a list of nodes that will be affected
+    #         for each node if it is removed.
+    affected = [set() for i in range(len(graph.nodes()))]
+
     node_count = 0
+    path_count = 0
     for node in graph.nodes():
-        all_paths.append(ball(node, l))
+        node_path = ball(node, l)
+        path_count += len(node_path)
+        all_paths.append(node_path)
         node_count += 1
         if node_count % 1000 == 0:
             print "{} nodes have been processed...".format(node_count)
 
     print "ball algorithm completed!!"
-    while len(seed) < N:
-        max_CI, max_id = 0, 0
-        for node in graph_.nodes():
-            cur_CI = get_CI(node, all_paths[node], node_status)
-            if cur_CI > max_CI:
-                max_CI = cur_CI
-                max_id = node
+    print "paths count: ", path_count
 
-        graph_.remove_node(max_id)
-        node_status[max_id] = 0
-        seed.append(max_id)
+    # record each node's CI value, only update nodes that are influenced
+    # by the removal.
+    CIs = [0 for i in range(node_count)]
+    to_be_update = graph_.nodes()
+    while len(seed) < N:
+        for node in to_be_update:
+            CIs[node] = get_CI(node, all_paths[node], node_status)
+        max_CI_node, max_CI = max(enumerate(CIs), key=lambda ci: ci[1])
+        if max_CI == 0:
+            seed.extend(list(graph_.nodes())[:N-len(seed)])
+            break
+        seed.append(max_CI_node)
+        node_status[max_CI_node] = 0
+        CIs[max_CI_node] = 0
+
+        # The CI value of a node is not abled to increase.
+        # so a node with a CI value of 0 can be eliminated from update list.
+        to_be_update = []
+        for n in affected[max_CI_node]:
+            if CIs[n]:
+                to_be_update.append(n)
+
+        # The max CI value may be zero after some removal
+        if max_CI_node in graph_.nodes():
+            graph_.remove_node(max_CI_node)
+        print "appending seed node {}/{}".format(len(seed), N)
     return seed
 
 def fanshen(graph, q_ratio):
     """
     """
-    pass
+    return []
 
 
+def main():
+    # G = gen_random_graph_pow(1000, 1, 0.5)
+    # nx.write_gexf(G, 'random_pow.gexf')
+    # print nx.info(G)
+    G = nx.read_gexf('random_pow.gexf', node_type=int)
+    print nx.info(G)
+    t1 = time.time()
+    print CI(G, 0.0015)
+    print time.time()-t1
+
+if __name__ == '__main__':
+     main() 
