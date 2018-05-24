@@ -6,36 +6,49 @@ from algorithm import *
 
 def simulation(graph, q_ratio, hd=True, pagerank=True,
                                ci=True, kcore=True,
-                               fanshen=True):
+                               fanshen=True, average=10):
     """
     Cascade a graph with seeds obtained by different algorithms.
     Parameters:
         graph: a nx.Graph graph
         q_ratio: (float) the ratio of nodes used as seeds.
+        average: (int) repeat to average the cascade rate.
     Return:
         a dict of cascade rate with different rate.
     """
     result = {}
     if hd:
-        hd_seed = HD(graph.copy(), q_ratio)
-        _, hd_cr = cascade(graph, hd_seed)
+        hd_seed = HD(graph.copy(), q_ratio)        
+        result['HD_cr'] = 0.
+        for i in range(average):
+            _, hd_cr = cascade(graph, hd_seed)
+            result['HD_cr'] += hd_cr
+        result['HD_cr'] /= average
         print "cascade the graph with HD algorithm successfully!!"
-        result['HD_cr'] = hd_cr
     if pagerank:
         pr_seed = PageRank(graph.copy(), q_ratio)
-        _, pr_cr = cascade(graph, pr_seed)
+        result['PR_cr'] = 0
+        for i in range(average):
+            _, pr_cr = cascade(graph, pr_seed)
+            result['PR_cr'] += pr_cr
+        result['PR_cr'] /= average
         print "cascade the graph with PageRank algorithm successfully!!"
-        result['PR_cr'] = pr_cr
     if ci:
         ci_seed = CI(graph.copy(), q_ratio)
-        _, ci_cr = cascade(graph, ci_seed)
+        result['CI_cr'] = 0
+        for i in range(average):
+            _, ci_cr = cascade(graph, ci_seed)
+            result['CI_cr'] += ci_cr
+        result['CI_cr'] /= average
         print "cascade the graph with CI algorithm successfully!!"
-        result['CI_cr'] = ci_cr
     if kcore:
         kc_seed = K_core(graph.copy(), q_ratio)
-        _, kc_cr = cascade(graph, kc_seed)
+        result['KC_cr'] = 0
+        for i in range(average): 
+            _, kc_cr = cascade(graph, kc_seed)
+            result['KC_cr'] += kc_cr
+        result['KC_cr'] /= average
         print "cascade the graph with k-core algorithm successfully!!"
-        result['KC_cr'] = kc_cr
     if fanshen:
         fs_seed = fanshen(graph.copy(), q_ratio)
         _, fs_cr = cascade(graph, fs_seed)
@@ -43,16 +56,92 @@ def simulation(graph, q_ratio, hd=True, pagerank=True,
         result['FS_cr'] = fs_cr
     return result
 
-def cascRate_vs_qRatio(graph, q_ratio_group):
+
+def simulation_seed(graph, seeds, hd=True, pagerank=True,
+                               ci=True, kcore=True,
+                               fanshen=True, average=10):
     """
+    Cascade a graph with seeds obtained by different algorithms.
+    This function is irrelavent to q ratio. Seeds are given.
+    Parameters:
+        graph: a nx.Graph graph
+        seeds: contains seeds from different algorithms
+               (hd, pagerank, ci, kcore, fanshen)
+        average: (int) repeat to average the cascade rate.
+    Return:
+        a dict of cascade rate with different rate.
     """
-    pass
+    result = {}
+    algo = ['hd', 'pagerank', 'ci', 'kcore', 'fanshen']
+    use_check = [hd, pagerank, ci, kcore, fanshen]
+    for i in range(len(use_check)):
+        if use_check[i]:
+            result[algo[i]] = 0
+            for j in range(average):
+                _, cr = cascade(graph, seeds[i])
+                result[algo[i]] += cr
+            result[algo[i]] /= average
+            print "cascade the graph with {} seeds successfully!!".format(algo[i])
+    return result
+
+
+def real_network_test(graph):
+    """
+    Test algorithm on practical network brightkite.
+    Obtain all seed nodes at once to accelerate simulation.
+
+    Parameters:
+        graph: (string) name of the practical network.
+    """
+    qratios = np.arange(0.004, 0.48, 0.004)
+    G = load_graph(graph)
+    # G = nx.read_gexf('random_pow.gexf', node_type=int)
+    print nx.info(G)
+    print len(G.nodes())*qratios
+    algos = [HD, PageRank, K_core, CI, fanshen]
+    seeds = []
+    for algo in algos:
+        seeds.append(algo(G.copy(), max(qratios)))
+    print len(seeds[3])
+
+    node_cnt = len(G.nodes())
+    for q in qratios:
+        N = int(node_cnt*q)
+        sub_seeds = [s[:N] for s in seeds]
+        result = simulation_seed(G, sub_seeds, fanshen=False)
+        print "q: {0}\tresult: ".format(q), result
+
+
+def gnp_simulation(n, p, q):
+    """
+    Run a simulation experiment on a gnp law distribution graph
+
+    Paramters:
+        n, p: 2 param to create a gnp graph
+        q: (float) fraction of seed    
+    """
+    G = gen_rand_graph_gnp(n, p)
+    print nx.info(G)
+    print "result ", simulation(G, q)
+    
+def pow_simulation(n, m, p, q):
+    """
+    Run a simulation experiment on a power law distribution graph
+
+    Parameters:
+        n, m, p: 3 param to create a power law graph
+        q: (float) fraction of seed
+    """
+    G = gen_random_graph_pow(n, m, p)
+    print nx.info(G)
+    print "result ", simulation(G, q)
 
 def main():
-    G = gen_random_graph_gnp(2000, 0.0015, uniform_max=0.5)
-    # print simulation(G, 0.005, fanshen=False)
-    # G = load_graph('brightkite.txt')
-    print simulation(G, 0.005, fanshen=False)
+    # G = gen_random_graph_pow(2000, 1, 0.5)
+    # print nx.info(G)
+    # nx.write_gexf(G, 'random_pow.gexf')
+    # print simulation(G, 0.0015, fanshen=False)
+    real_network_test('facebook_combined.txt')
 
 if __name__ == '__main__':
     main()
