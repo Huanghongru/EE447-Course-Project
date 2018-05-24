@@ -71,6 +71,7 @@ def write_graph(graph):
 def load_graph(file):
     """
     Load a large network file into graph variable.
+    If the graph doesn't have weight, assign weight randomly.
     
     Parameters:
         file: (string) specify the network file name
@@ -88,11 +89,12 @@ def load_graph(file):
                     u, v, w = data.split()
                 else:
                     u, v = data.split()
-                    w = '0'
+                    w = "{0:.2f}".format(random.uniform(0., 1.))
                 G.add_edge(eval(u), eval(v), weight=eval(w))
     for _, node_prop in G.nodes(data=True):
         node_prop['state'] = 0
     print "loading graph completed successfully!!"
+    print nx.info(G)
     return G
 
 
