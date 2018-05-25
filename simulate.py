@@ -85,17 +85,18 @@ def simulation_seed(graph, seeds, hd=True, pagerank=True,
     return result
 
 
-def real_network_test(graph):
+def real_network_test(graph, sample=True):
     """
     Test algorithm on practical network brightkite.
     Obtain all seed nodes at once to accelerate simulation.
 
     Parameters:
         graph: (string) name of the practical network.
+        sample: (bool) sample before cascading to reduce random effect.
     """
-    qratios = np.arange(0.004, 0.48, 0.004)
-    G = load_graph(graph)
-    # G = nx.read_gexf('random_pow.gexf', node_type=int)
+    qratios = np.arange(0.002, 0.14, 0.002)
+    # G = load_graph(graph)
+    G = nx.read_gexf('random_pow.gexf', node_type=int)
     print nx.info(G)
     print len(G.nodes())*qratios
     algos = [HD, PageRank, K_core, CI, fanshen]
@@ -108,8 +109,29 @@ def real_network_test(graph):
     for q in qratios:
         N = int(node_cnt*q)
         sub_seeds = [s[:N] for s in seeds]
-        result = simulation_seed(G, sub_seeds, fanshen=False)
+        if sample:
+            G_ = sample_graph(G)
+            result = simulation_seed(G_, sub_seeds, fanshen=False, average=1)
+        else:
+            result = simulation_seed(G, sub_seeds, fanshen=False)
         print "q: {0}\tresult: ".format(q), result
+
+def sample_graph(graph):
+    """
+    According to the edge weight, we determine a edge whether it can
+    spread information before simulation, which may reduce the random
+    effect when cascading.
+
+    Parameters:
+        graph: a nx.Graph type
+    Return:
+        a nx.Graph with edge weight ether be 1 or 0.
+    """
+    G = graph.copy()
+    for u, v, d in G.edges(data=True):
+        if random.uniform(0, 1) > 1-d['weight']:
+            d['weight'] = 1
+    return G
 
 
 def gnp_simulation(n, p, q):
@@ -137,11 +159,11 @@ def pow_simulation(n, m, p, q):
     print "result ", simulation(G, q)
 
 def main():
-    # G = gen_random_graph_pow(2000, 1, 0.5)
+    # G = gen_random_graph_pow(2000, 2, 0.3)
     # print nx.info(G)
     # nx.write_gexf(G, 'random_pow.gexf')
     # print simulation(G, 0.0015, fanshen=False)
-    real_network_test('facebook_combined.txt')
+    real_network_test('facebook_combined.txt', sample=True)
 
 if __name__ == '__main__':
     main()
