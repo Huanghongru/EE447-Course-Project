@@ -291,10 +291,156 @@ def CI(graph, q_ratio, l=3):
         print "appending seed node {}/{}".format(len(seed), N)
     return seed
 
-def fanshen(graph, q_ratio):
+def fanshen(graph, q_ratio, l=3):
     """
+    The main theory is the same as CI's, whereas the detail CI calculations differ.
+
+    Parameters:
+        graph: a nx.Graph type.
+        q_ratio: (float) the ratio of nodes used as seeds.
+    Return:
+        a list of seed nodes
     """
-    return []
+
+    def ball(node, l):
+        """
+        Same as CI's inner function.
+
+        Return:
+            paths: 
+        """
+        ball_nodes = set()
+        paths = []
+        visited = set()
+        cur_len = 0
+        min_dist = {}   # record the minimum distance from node i
+        q = deque([(node, [node])])
+
+        while cur_len <= l:
+            cur_layer_nodes_num = len(q)
+            while cur_layer_nodes_num > 0 and len(q):
+                cur_node, cur_path = q.popleft()
+                visited.add(cur_node)
+
+                if not min_dist.get(cur_node):
+                    min_dist[cur_node] = cur_len
+                
+                if cur_len == l and min_dist[cur_node] == l:
+                    if cur_path[-1] not in ball_nodes:
+                        paths.append(cur_path)
+                        for node_ in cur_path:
+                            affected[node_].add(node)
+                    ball_nodes.add(cur_node)
+
+                for u, v in graph.edges(cur_node):
+                    if v not in visited:
+                        aug_path = cur_path[:]
+                        aug_path.append(v)
+                        q.append((v, aug_path))
+                cur_layer_nodes_num -= 1
+            cur_len += 1
+
+        return paths
+
+    def get_CI(node, paths, node_status):
+        """
+        Different calculations.
+        """
+
+        def get_u2(i, j):
+            if node_status[i] == 1:
+                return 1.
+            fathom = u_dic.get((i,j), None)
+            if fathom != None:
+                return fathom
+
+            neighbors = list(graph[i])
+            if j in neighbors:
+                neighbors.remove(j)
+            prod = 1.
+            for k in neighbors:
+                p_ki = graph[k][i]['weight']
+                u_ki = get_u2(k, i)
+                prod *= 1. - p_ki * u_ki
+            u_ij = 1. - prod
+            u_dic[(i,j)] = u_ij
+            return u_ij
+
+        def get_u1(i, u_ij):
+            if node_status[i] == 1:
+                return 1.
+            fathom = u_dic.get(i, None)
+            if fathom != None:
+                return fathom
+
+            prod = 1. - u_ij
+            p_ji = graph[j][i]['weight']
+            u_ji = get_u2(j, i)
+            prod *= 1. - p_ji * u_ji
+            u_i = 1. - prod
+            u_dic[i] = u_i
+            return u_i
+
+        if not node_status[node]:
+            return 0.
+        ci = 0.
+        for path in paths:
+            B_ij = np.mat([1,-1])
+            for start in range(len(path)-1):
+                i = path[start]
+                j = path[start+1]
+                # First calculate u_ij:
+                # the probability that i get infected in G\j
+                u_ij = get_u2(i, j)
+                u_i = get_u1(i, u_ij)
+                p_ij = graph[i][j]['weight']
+
+                b00 = 1
+                b01 = u_ij - 1
+                b10 = (1 - p_ij) / (1 - p_ij * u_ij)
+                b11 = (1 - p_ij - u_i + p_ij * u_ij) / (p_ij * u_ij - 1)
+                B_ij = B_ij * np.mat([[b00, b01], [b10, b11]])
+            B_ij = B_ij * np.mat([1,-1])
+            ci += float(B_ij)
+        ci *= graph.degree(node) - 1
+        return ci
+
+    N = int(len(graph.nodes())*q_ratio)
+    seed = []
+    node_status = [1 for i in range(len(graph.nodes()))]
+    all_paths = []
+    u_dic = dict()
+
+    node_count = 0
+    path_count = 0
+    for node in graph.nodes():
+        node_path = ball(node, l)
+        path_count += len(node_path)
+        all_paths.append(node_path)
+        node_count += 1
+        if node_count % 1000 == 0:
+            print "{} nodes have been processed...".format(node_count)
+
+    print "ball algorithm completed!!"
+    print "paths count: ", path_count
+
+    CIs = [0 for i in range(node_count)]
+    to_select = list(graph.nodes())
+    while len(seed) < N:
+        for node in to_select:
+            CIs[node] = get_CI(node, all_paths[node], node_status)
+        max_CI_node, max_CI = max(enumerate(CIs), key=lambda ci: ci[1])
+        if max_CI == 0:
+            seed.extend(to_select[:N-len(seed)])
+            break
+        seed.append(max_CI_node)
+        node_status[max_CI_node] = 0
+        CIs[max_CI_node] = 0
+        to_select.remove(max_CI_node)
+        u_dic.clear()
+        print "appending seed node {}/{}".format(len(seed), N)
+
+    return seed
 
 
 def main():
