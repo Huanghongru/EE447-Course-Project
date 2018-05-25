@@ -453,7 +453,10 @@ def fanshen(graph, q_ratio, l=3):
         node_status[max_CI_node] = 0
         CIs[max_CI_node] = 0
         to_select.remove(max_CI_node)
-        # u_dic.clear()
+
+        # here consider the case of multiple connected components
+        # whereas generally the graph is connectd
+        # so here may offer some space for optimizing
         to_update = nx.node_connected_component(g, max_CI_node)
         to_update.remove(max_CI_node)
         for edge in graph.edges(max_CI_node):
