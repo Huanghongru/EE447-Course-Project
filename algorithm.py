@@ -400,7 +400,7 @@ def fanshen(graph, q_ratio, l=3):
                 b10 = (1 - p_ij) / (1 - p_ij * u_ij)
                 b11 = (1 - p_ij - u_i + p_ij * u_ij) / (p_ij * u_ij - 1)
                 B_ij = B_ij * np.mat([[b00, b01], [b10, b11]])
-            B_ij = B_ij * np.mat([1,-1])
+            B_ij = B_ij * np.mat([[1],[-1]])
             ci += float(B_ij)
         ci *= graph.degree(node) - 1
         return ci
