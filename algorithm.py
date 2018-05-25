@@ -347,42 +347,20 @@ def fanshen(graph, q_ratio, l=3):
         Different calculations.
         """
 
-        def get_u2(i, j):
+        def get_u1(i, j):
             if node_status[i] == 1:
                 return 1.
-            fathom = u_dic.get((i,j), None)
-            if fathom != None:
-                return fathom
-
-            neighbors = list(graph[i])
-            if j in neighbors:
-                neighbors.remove(j)
-            prod = 1.
-            for k in neighbors:
-                p_ki = graph[k][i]['weight']
-                u_ki = get_u2(k, i)
-                prod *= 1. - p_ki * u_ki
-            u_ij = 1. - prod
-            u_dic[(i,j)] = u_ij
-            return u_ij
-
-        def get_u1(i, u_ij):
-            if node_status[i] == 1:
-                return 1.
-            fathom = u_dic.get(i, None)
-            if fathom != None:
-                return fathom
 
             prod = 1. - u_ij
             p_ji = graph[j][i]['weight']
-            u_ji = get_u2(j, i)
+            u_ji = u_dic[(j,i)]
             prod *= 1. - p_ji * u_ji
             u_i = 1. - prod
-            u_dic[i] = u_i
             return u_i
 
-        if not node_status[node]:
+        if not node_status[node] or graph.degree(node) == 1:
             return 0.
+
         ci = 0.
         for path in paths:
             B_ij = np.mat([1,-1])
@@ -391,8 +369,8 @@ def fanshen(graph, q_ratio, l=3):
                 j = path[start+1]
                 # First calculate u_ij:
                 # the probability that i get infected in G\j
-                u_ij = get_u2(i, j)
-                u_i = get_u1(i, u_ij)
+                u_ij = u_dic[(i,j)]
+                u_i = get_u1(i, j)
                 p_ij = graph[i][j]['weight']
 
                 b00 = 1
@@ -405,11 +383,45 @@ def fanshen(graph, q_ratio, l=3):
         ci *= graph.degree(node) - 1
         return ci
 
+    def iterate_u(seed_node, to_update):
+
+        def get_u2(i, j):
+            if node_status[i] == 1:
+                return 1.
+
+            neighbors = list(graph[i]).remove(j)
+            prod = 1.
+            for k in neighbors:
+                p_ki = graph[k][i]['weight']
+                u_ki = u_dic[(k,i)]
+                prod *= 1. - p_ki * u_ki
+            u_ij = 1. - prod
+            return u_ij
+
+        max_bias = 0
+        tmp_bias = 0
+        epoch = 0
+        while True:
+            epoch += 1
+            for u in to_update:
+                for i, j in graph.edges(u):
+                    u_ij = get_u2(i, j)
+                    tmp_bias = abs(u_ij - u_dic[(i,j)])
+                    max_bias = max(tmp_bias, max_bias)
+                    u_dic[(i,j)] = u_ij
+            print "Iterating epoch {}: max bias is {}".format(epoch, max_bias)
+            if max_bias < 0.1:
+                break
+
+
     N = int(len(graph.nodes())*q_ratio)
     seed = []
     node_status = [1 for i in range(len(graph.nodes()))]
     all_paths = []
     u_dic = dict()
+    for edge in graph.edges():
+        u_dic[edge] = 0.
+        u_dic[edge[::-1]] = 0.
 
     node_count = 0
     path_count = 0
@@ -426,18 +438,27 @@ def fanshen(graph, q_ratio, l=3):
 
     CIs = [0 for i in range(node_count)]
     to_select = list(graph.nodes())
-    while len(seed) < N:
-        for node in to_select:
+    to_update = set(graph.nodes())
+    while True:
+        for node in to_update:
             CIs[node] = get_CI(node, all_paths[node], node_status)
         max_CI_node, max_CI = max(enumerate(CIs), key=lambda ci: ci[1])
         if max_CI == 0:
             seed.extend(to_select[:N-len(seed)])
             break
+
         seed.append(max_CI_node)
+        if len(seed) == N:
+            break
         node_status[max_CI_node] = 0
         CIs[max_CI_node] = 0
         to_select.remove(max_CI_node)
-        u_dic.clear()
+        # u_dic.clear()
+        to_update = nx.node_connected_component(g, max_CI_node)
+        to_update.remove(max_CI_node)
+        for edge in graph.edges(max_CI_node):
+            u_dic[edge] = 1.
+        iterate_u(max_CI_node, to_update);
         print "appending seed node {}/{}".format(len(seed), N)
 
     return seed
