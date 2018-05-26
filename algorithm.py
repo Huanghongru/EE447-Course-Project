@@ -328,8 +328,8 @@ def fanshen(graph, q_ratio, l=3):
                 if cur_len == l and min_dist[cur_node] == l:
                     if cur_path[-1] not in ball_nodes:
                         paths.append(cur_path)
-                        for node_ in cur_path:
-                            affected[node_].add(node)
+                        # for node_ in cur_path:
+                            # affected[node_].add(node)
                     ball_nodes.add(cur_node)
 
                 for u, v in graph.edges(cur_node):
@@ -341,6 +341,22 @@ def fanshen(graph, q_ratio, l=3):
             cur_len += 1
 
         return paths
+
+    def get_u2(i, j, node_status):
+        if node_status[i] == 1:
+            return 1.
+
+        neighbors = list(graph[i])
+        neighbors.remove(j)
+        # print i,neighbors
+        prod = 1.
+        # if neighbors != None:
+        for k in neighbors:
+            p_ki = graph[k][i]['weight']
+            u_ki = u_dic[(k,i)]
+            prod *= 1. - p_ki * u_ki
+        u_ij = 1. - prod
+        return u_ij
 
     def get_CI(node, paths, node_status):
         """
@@ -358,7 +374,7 @@ def fanshen(graph, q_ratio, l=3):
             u_i = 1. - prod
             return u_i
 
-        if not node_status[node] or graph.degree(node) == 1:
+        if node_status[node] or graph.degree(node) == 1:
             return 0.
 
         ci = 0.
@@ -383,40 +399,10 @@ def fanshen(graph, q_ratio, l=3):
         ci *= graph.degree(node) - 1
         return ci
 
-    def iterate_u(seed_node, to_update):
-
-        def get_u2(i, j):
-            if node_status[i] == 1:
-                return 1.
-
-            neighbors = list(graph[i]).remove(j)
-            prod = 1.
-            for k in neighbors:
-                p_ki = graph[k][i]['weight']
-                u_ki = u_dic[(k,i)]
-                prod *= 1. - p_ki * u_ki
-            u_ij = 1. - prod
-            return u_ij
-
-        max_bias = 0
-        tmp_bias = 0
-        epoch = 0
-        while True:
-            epoch += 1
-            for u in to_update:
-                for i, j in graph.edges(u):
-                    u_ij = get_u2(i, j)
-                    tmp_bias = abs(u_ij - u_dic[(i,j)])
-                    max_bias = max(tmp_bias, max_bias)
-                    u_dic[(i,j)] = u_ij
-            print "Iterating epoch {}: max bias is {}".format(epoch, max_bias)
-            if max_bias < 0.1:
-                break
-
 
     N = int(len(graph.nodes())*q_ratio)
     seed = []
-    node_status = [1 for i in range(len(graph.nodes()))]
+    node_status = [0 for i in range(len(graph.nodes()))]
     all_paths = []
     u_dic = dict()
     for edge in graph.edges():
@@ -443,6 +429,7 @@ def fanshen(graph, q_ratio, l=3):
         for node in to_update:
             CIs[node] = get_CI(node, all_paths[node], node_status)
         max_CI_node, max_CI = max(enumerate(CIs), key=lambda ci: ci[1])
+        print "max_CI_node:{},max_CI:{}".format(max_CI_node, max_CI)
         if max_CI == 0:
             seed.extend(to_select[:N-len(seed)])
             break
@@ -450,18 +437,41 @@ def fanshen(graph, q_ratio, l=3):
         seed.append(max_CI_node)
         if len(seed) == N:
             break
-        node_status[max_CI_node] = 0
+        node_status[max_CI_node] = 1
         CIs[max_CI_node] = 0
         to_select.remove(max_CI_node)
 
         # here consider the case of multiple connected components
         # whereas generally the graph is connectd
         # so here may offer some space for optimizing
-        to_update = nx.node_connected_component(g, max_CI_node)
+        to_update = nx.node_connected_component(graph, max_CI_node)
         to_update.remove(max_CI_node)
         for edge in graph.edges(max_CI_node):
             u_dic[edge] = 1.
-        iterate_u(max_CI_node, to_update);
+        
+        '''Iterating process'''
+        # Python2 does not support nonlocal definition for u_dic
+        # so i cannot use a function
+
+        epoch = 0
+        while True:
+            epoch += 1
+            max_bias = 0
+            tmp_bias = 0
+            for u in to_update:
+                for i, j in graph.edges(u):
+                    u_ij = get_u2(i, j, node_status)
+                    tmp_bias = abs(u_ij - u_dic[(i,j)])
+                    # if tmp_bias > 0:
+                    # print i,j,u_ij,u_dic[(i,j)]
+                    # exit()
+                    max_bias = max(tmp_bias, max_bias)
+                    u_dic[(i,j)] = u_ij
+            print "Iterating epoch {}: max bias is {}".format(epoch, max_bias)
+            if max_bias < 0.01:
+                break
+        '''end iterating'''
+
         print "appending seed node {}/{}".format(len(seed), N)
 
     return seed
@@ -469,12 +479,21 @@ def fanshen(graph, q_ratio, l=3):
 
 def main():
     # G = gen_random_graph_pow(1000, 1, 0.5)
+    # G = gen_random_graph_gnp(1000, 0.001)
     # nx.write_gexf(G, 'random_pow.gexf')
+    # nx.write_gexf(G, 'random_gnp.gexf')
     # print nx.info(G)
-    G = nx.read_gexf('random_pow.gexf', node_type=int)
+    # G = nx.read_gexf('random_pow.gexf', node_type=int)
+    G = nx.read_gexf('random_gnp.gexf', node_type=int)
+
     print nx.info(G)
     t1 = time.time()
-    print CI(G, 0.0015)
+    # print CI(G, 0.0015)
+    for i in G.edges(450):
+        print i
+
+    print fanshen(G, 0.015)
+    print CI(G, 0.015)
     print time.time()-t1
 
 if __name__ == '__main__':
