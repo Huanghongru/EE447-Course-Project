@@ -50,7 +50,7 @@ def draw_q_vs_spreadRange(qs, hd, ci, kc, pr, fs):
     ci_plot = ax.plot(qs, ci, marker='.', markersize=3, color=color['blue'])
     fs_plot = ax.plot(qs, fs, marker='.', markersize=3, color=color['purple'])
 
-    plt.legend(("HD", "PageRank", "CI", "K-core", "fanshen"), loc=4)
+    plt.legend(("HD", "PageRank", "K-core", "CI", "fanshen"), loc=4)
     plt.show()
 
 def main():
