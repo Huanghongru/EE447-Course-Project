@@ -159,21 +159,11 @@ def pow_simulation(n, m, p, q):
     print "result ", simulation(G, q)
 
 def main():
-<<<<<<< HEAD
     G = gen_random_graph_pow(2000, 1, 0.5)
     print nx.info(G)
     nx.write_gexf(G, 'random_pow.gexf')
     # print simulation(G, 0.0015, fanshen=False)
     real_network_test('facebook_combined.txt', sample=True)
-=======
-    # G = gen_random_graph_pow(2000, 1, 0.5)
-    # print nx.info(G)
-    # nx.write_gexf(G, 'random_pow.gexf')
-    # print simulation(G, 0.0015, fanshen_flag=False)
-    # real_network_test('facebook_combined.txt')
-    G = nx.read_gexf('random_gnp.gexf', node_type = int)
-    print simulation(G, 0.015)
->>>>>>> 45ca0d19fafc0729542c29a375a820a602f49f04
-
+    
 if __name__ == '__main__':
     main()
