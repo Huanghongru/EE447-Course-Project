@@ -72,13 +72,13 @@ def simulation_seed(graph, seeds, hd=True, pagerank=True,
         a dict of cascade rate with different rate.
     """
     result = {}
-    algo = ['hd', 'pagerank', 'ci', 'kcore', 'fanshen']
-    use_check = [hd, pagerank, ci, kcore, fanshen]
+    algo = ['hd', 'pagerank', 'kcore', 'ci', 'fanshen']
+    use_check = [hd, pagerank, kcore, ci, fanshen]
     for i in range(len(use_check)):
         if use_check[i]:
             result[algo[i]] = 0
             for j in range(average):
-                _, cr = cascade(graph, seeds[i])
+                _, cr = cascade(graph.copy(), seeds[i])
                 result[algo[i]] += cr
             result[algo[i]] /= average
             print "cascade the graph with {} seeds successfully!!".format(algo[i])
@@ -159,9 +159,9 @@ def pow_simulation(n, m, p, q):
     print "result ", simulation(G, q)
 
 def main():
-    # G = gen_random_graph_pow(2000, 2, 0.3)
-    # print nx.info(G)
-    # nx.write_gexf(G, 'random_pow.gexf')
+    G = gen_random_graph_pow(2000, 1, 0.5)
+    print nx.info(G)
+    nx.write_gexf(G, 'random_pow.gexf')
     # print simulation(G, 0.0015, fanshen=False)
     real_network_test('facebook_combined.txt', sample=True)
 
