@@ -6,7 +6,7 @@ from algorithm import *
 
 def simulation(graph, q_ratio, hd=True, pagerank=True,
                                ci=True, kcore=True,
-                               fanshen=True, average=10):
+                               fanshen_flag=True, average=10):
     """
     Cascade a graph with seeds obtained by different algorithms.
     Parameters:
@@ -49,7 +49,7 @@ def simulation(graph, q_ratio, hd=True, pagerank=True,
             result['KC_cr'] += kc_cr
         result['KC_cr'] /= average
         print "cascade the graph with k-core algorithm successfully!!"
-    if fanshen:
+    if fanshen_flag:
         fs_seed = fanshen(graph.copy(), q_ratio)
         _, fs_cr = cascade(graph, fs_seed)
         print "cascade the graph with fanshen algorithm successfully!!"
@@ -59,7 +59,7 @@ def simulation(graph, q_ratio, hd=True, pagerank=True,
 
 def simulation_seed(graph, seeds, hd=True, pagerank=True,
                                ci=True, kcore=True,
-                               fanshen=True, average=10):
+                               fanshen_flag=True, average=10):
     """
     Cascade a graph with seeds obtained by different algorithms.
     This function is irrelavent to q ratio. Seeds are given.
@@ -73,7 +73,7 @@ def simulation_seed(graph, seeds, hd=True, pagerank=True,
     """
     result = {}
     algo = ['hd', 'pagerank', 'kcore', 'ci', 'fanshen']
-    use_check = [hd, pagerank, kcore, ci, fanshen]
+    use_check = [hd, pagerank, kcore, ci, fanshen_flag]
     for i in range(len(use_check)):
         if use_check[i]:
             result[algo[i]] = 0
@@ -111,9 +111,9 @@ def real_network_test(graph, sample=True):
         sub_seeds = [s[:N] for s in seeds]
         if sample:
             G_ = sample_graph(G)
-            result = simulation_seed(G_, sub_seeds, fanshen=False, average=1)
+            result = simulation_seed(G_, sub_seeds, fanshen_flag=False)
         else:
-            result = simulation_seed(G, sub_seeds, fanshen=False)
+            result = simulation_seed(G, sub_seeds, fanshen_flag=False)
         print "q: {0}\tresult: ".format(q), result
 
 def sample_graph(graph):
@@ -159,11 +159,21 @@ def pow_simulation(n, m, p, q):
     print "result ", simulation(G, q)
 
 def main():
+<<<<<<< HEAD
     G = gen_random_graph_pow(2000, 1, 0.5)
     print nx.info(G)
     nx.write_gexf(G, 'random_pow.gexf')
     # print simulation(G, 0.0015, fanshen=False)
     real_network_test('facebook_combined.txt', sample=True)
+=======
+    # G = gen_random_graph_pow(2000, 1, 0.5)
+    # print nx.info(G)
+    # nx.write_gexf(G, 'random_pow.gexf')
+    # print simulation(G, 0.0015, fanshen_flag=False)
+    # real_network_test('facebook_combined.txt')
+    G = nx.read_gexf('random_gnp.gexf', node_type = int)
+    print simulation(G, 0.015)
+>>>>>>> 45ca0d19fafc0729542c29a375a820a602f49f04
 
 if __name__ == '__main__':
     main()
