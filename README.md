@@ -11,7 +11,10 @@ Our work is mainly inspired by the framework on the optimal percolation. In our 
 We conduct 4 different random graph as network on which we can test the performance of our algorithm. The basic information of these 4 networks are shown in the table:
 ![](fig/setup.png)
 
+
 One of the result is shown as follows:
+
 ![](fig/demo.png)
+
 From the result we can see that in a small fraction of seed nodes, our algorithm performs much better than baseline algorithms like k-core. It also achieve higher spread range than the CI method, which doesn't consider the probability of successful transimission on the edge. In our simulation experiment, HD and PageRank have a similar performance but a little bit worse than our algorithm.
 
