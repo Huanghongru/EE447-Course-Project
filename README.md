@@ -7,6 +7,11 @@ A motivating application for the study of influence spread is active propagation
 
 Our work is mainly inspired by the framework on the optimal percolation. In our work, we are going to study the complementary problem of finding the minimal set of nodes to infect as many other nodes as possible.
 
-## Message Passing Formula and Eigenvalue Optimization
-Message passing formulas:
-$$ x^2+y^2 = 1$$
+## Experiment
+We conduct 4 different random graph as network on which we can test the performance of our algorithm. The basic information of these 4 networks are shown in the table:
+![](fig/setup.png)
+
+One of the result is shown as follows:
+![](fig/demo.png)
+From the result we can see that in a small fraction of seed nodes, our algorithm performs much better than baseline algorithms like k-core. It also achieve higher spread range than the CI method, which doesn't consider the probability of successful transimission on the edge. In our simulation experiment, HD and PageRank have a similar performance but a little bit worse than our algorithm.
+
