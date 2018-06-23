@@ -9,4 +9,4 @@ Our work is mainly inspired by the framework on the optimal percolation. In our 
 
 ## Message Passing Formula and Eigenvalue Optimization
 Message passing formulas:
-<img src="http://www.forkosh.com/mathtex.cgi? x^2+y^2=1">
+$$ x^2+y^2 = 1$$
